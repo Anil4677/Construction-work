@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test Make Site Quotation API</title>
+</head>
+<body>
+  <h2>Make Site Quotation Test</h2>
+  <button id="sendData">Send Sample Quotation</button>
+
+  <script>
+    document.getElementById('sendData').addEventListener('click', () => {
+      const sampleData = {
+        task: "Make Site Quotation",
+        quotations: [
+          { next: "Next1", detail: "Detail1", quantity: quantity, rate: rate, total: total },
+          { next: "Next2", detail: "Detail2", quantity: quantity, rate: rate, total: total }
+        ],
+        grandTotal: grandTotal
+      };
+
+      fetch('http://localhost:3000/submit-work', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sampleData)
+      })
+      .then(res => res.json())
+      .then(data => alert('Response: ' + JSON.stringify(data)))
+      .catch(err => alert('Error: ' + err));
+    });
+  </script>
+</body>
+</html>

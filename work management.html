@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Work Management</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: start;
+            padding-top: 50px;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        form {
+            background: rgb(54, 136, 212);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 900px;
+            color: white;
+        }
+        select, input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        input[type="submit"], button {
+            background-color: #fff;
+            color: #3688d4;
+            border: none;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        input[type="submit"]:hover, button:hover {
+            background-color: #e0e0e0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+            color: black;
+        }
+        th {
+            background-color: #ddd;
+        }
+        .hidden {
+            display: none;
+        }
+        .name-input {
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+<form id="workForm">
+    <label for="task">What To Do:</label>
+    <select id="task" name="task">
+        <option value="">Select What To Do</option>
+        <option value="Make Site Quotation">Make Site Quotation</option>
+        <option value="Send Money">Send Money</option>
+        <option value="Payment Received">Payment Received</option>
+        <option value="Open New Site">Open New Site</option>
+        <option value="Site Closed">Site Closed</option>
+    </select>
+
+    <!-- Quotation Section -->
+    <div id="quotationContainer" class="hidden">
+        <table>
+            <thead>
+            <tr>
+                <th>Next</th>
+                <th>Detail</th>
+                <th>Quantity</th>
+                <th>Rate</th>
+                <th>Total</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody id="quotationRows"></tbody>
+            <tfoot>
+            <tr>
+                <td colspan="4" style="text-align: right;"><strong>Grand Total:</strong></td>
+                <td><input type="number" id="grandTotal" readonly></td>
+                <td></td>
+            </tr>
+            </tfoot>
+        </table>
+        <button type="button" onclick="addQuotationRow()">+ Add Quotation</button>
+    </div>
+
+    <!-- Send Money Section -->
+    <div id="sendMoneySection" class="hidden">
+        <label for="nextSend">Next:</label>
+        <select id="nextSend">
+            <option value="">Select</option>
+        </select>
+
+        <label for="detailSend">Detail:</label>
+        <select id="detailSend">
+            <option value="">Select</option>
+        </select>
+
+        <div id="amountSection" class="hidden">
+            <label for="amount">Amount (INR):</label>
+            <input type="number" id="amount" min="0" step="0.01">
+        </div>
+
+        <div id="assetNameSection" class="hidden">
+            <label for="assetName">Assets Name:</label>
+            <input type="text" id="assetName">
+        </div>
+    </div>
+
+    <!-- Payment Received Section -->
+    <div id="paymentReceivedSection" class="hidden">
+        <label for="receivedFrom">Payment Received From:</label>
+        <input type="text" id="receivedFrom" name="receivedFrom">
+
+        <label for="receivedAmount">Amount (INR):</label>
+        <input type="number" id="receivedAmount" name="receivedAmount" min="0" step="0.01">
+    </div>
+
+    <input type="submit" value="Submit" disabled>
+</form>
+
+<script>
+    const task = document.getElementById('task');
+    const quotationContainer = document.getElementById('quotationContainer');
+    const sendMoneySection = document.getElementById('sendMoneySection');
+    const quotationRows = document.getElementById('quotationRows');
+    const nextSend = document.getElementById('nextSend');
+    const detailSend = document.getElementById('detailSend');
+    const amountSection = document.getElementById('amountSection');
+    const assetNameSection = document.getElementById('assetNameSection');
+    const paymentReceivedSection = document.getElementById('paymentReceivedSection');
+
+    const nextOptions = {
+        "Make Site Quotation": ["Kitchen", "Bathroom", "Hall", "let-bath"],
+        "Send Money": [
+            "payment for going anywhere", "payment for coming anywhere", "Personal Reason",
+            "assets for site", "dust takeout from site", "payment for salary"
+        ]
+    };
+
+    const detailOptions = {
+        "Kitchen": ["wall tile", "Plumbing", "Painting", "flooring", "Tod-Fod"],
+        "Bathroom": ["wall tile", "Plumbing", "Painting", "flooring", "Tod-Fod"],
+        "Hall": ["wall tile", "Plumbing", "Painting", "flooring", "Tod-Fod"],
+        "let-bath": ["wall tile", "Plumbing", "Painting", "flooring", "Tod-Fod"],
+        "payment for going anywhere": ["Auto Riksha", "Train", "bus", "Other"],
+        "payment for coming anywhere": ["Auto Riksha", "Train", "bus", "Other"],
+        "Personal Reason": ["Ration Vagitables", "Brek-Fast-Lunch-Dinner", "Mobile Recharge", "Investment", "Lent Money To Someone", "Other"],
+        "assets for site": ["On Rent", "Purchase"],
+        "dust takeout from site": ["Truck Driver", "Helper"],
+        "payment for salary": ["Mishtri", "Helper", "Plumber", "Painter"]
+    };
+
+    const showAmountAlways = ["payment for going anywhere", "payment for coming anywhere"];
+    const personalReasons = detailOptions["Personal Reason"];
+    const assetTypes = detailOptions["assets for site"];
+    const paymentForSalaryDetails = detailOptions["payment for salary"];
+
+    task.addEventListener('change', () => {
+        const selectedTask = task.value;
+
+        quotationContainer.classList.add('hidden');
+        sendMoneySection.classList.add('hidden');
+        paymentReceivedSection.classList.add('hidden');
+        quotationRows.innerHTML = '';
+
+        if (selectedTask === "Make Site Quotation") {
+            quotationContainer.classList.remove('hidden');
+            addQuotationRow();
+            updateGrandTotal();
+        } else if (selectedTask === "Send Money") {
+            sendMoneySection.classList.remove('hidden');
+            populateOptions(nextSend, nextOptions["Send Money"]);
+            detailSend.innerHTML = '<option value="">Select</option>';
+            amountSection.classList.add('hidden');
+            assetNameSection.classList.add('hidden');
+        } else if (selectedTask === "Payment Received") {
+            paymentReceivedSection.classList.remove('hidden');
+        }
+
+        validateForm();
+    });
+
+    nextSend.addEventListener('change', () => {
+        const selectedNext = nextSend.value;
+        populateOptions(detailSend, detailOptions[selectedNext] || []);
+        amountSection.classList.add('hidden');
+        assetNameSection.classList.add('hidden');
+        validateForm();
+    });
+
+    detailSend.addEventListener('change', () => {
+        const nextVal = nextSend.value;
+        const detailVal = detailSend.value;
+
+        const showAmount =
+            showAmountAlways.includes(nextVal) ||
+            (nextVal === "Personal Reason" && personalReasons.includes(detailVal)) ||
+            (nextVal === "assets for site" && assetTypes.includes(detailVal)) ||
+            (nextVal === "dust takeout from site") ||
+            (nextVal === "payment for salary" && paymentForSalaryDetails.includes(detailVal));
+
+        const showAssetName = nextVal === "assets for site" && assetTypes.includes(detailVal);
+
+        amountSection.classList.toggle('hidden', !showAmount);
+        assetNameSection.classList.toggle('hidden', !showAssetName);
+        validateForm();
+    });
+
+    function populateOptions(selectEl, options) {
+        selectEl.innerHTML = `<option value="">Select</option>`;
+        options.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            selectEl.appendChild(option);
+        });
+    }
+
+    function addQuotationRow() {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <select onchange="populateDetailOptions(this); validateForm();">
+                    <option value="">Select</option>
+                    ${nextOptions["Make Site Quotation"].map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                </select>
+            </td>
+            <td><select onchange="validateForm();"><option value="">Select</option></select></td>
+            <td><input type="number" step="0.01" oninput="calcTotal(this)"></td>
+            <td><input type="number" step="0.01" oninput="calcTotal(this)"></td>
+            <td><input type="number" readonly></td>
+            <td><button type="button" onclick="this.closest('tr').remove(); updateGrandTotal(); validateForm();">Remove</button></td>
+        `;
+        quotationRows.appendChild(row);
+        updateGrandTotal();
+        validateForm();
+    }
+
+    function populateDetailOptions(selectElem) {
+        const selected = selectElem.value;
+        const detailSelect = selectElem.closest('tr').children[1].querySelector('select');
+        populateOptions(detailSelect, detailOptions[selected] || []);
+    }
+
+    function calcTotal(elem) {
+        const row = elem.closest('tr');
+        const qty = parseFloat(row.children[2].querySelector('input').value) || 0;
+        const rate = parseFloat(row.children[3].querySelector('input').value) || 0;
+        row.children[4].querySelector('input').value = (qty * rate).toFixed(2);
+        updateGrandTotal();
+        validateForm();
+    }
+
+    function updateGrandTotal() {
+        let total = 0;
+        const rows = quotationRows.querySelectorAll('tr');
+        rows.forEach(row => {
+            const totalInput = row.children[4].querySelector('input');
+            const value = parseFloat(totalInput.value) || 0;
+            total += value;
+        });
+        document.getElementById('grandTotal').value = total.toFixed(2);
+    }
+
+    const form = document.getElementById('workForm');
+    const submitBtn = form.querySelector('input[type="submit"]');
+
+    form.addEventListener('input', validateForm);
+    task.addEventListener('change', validateForm);
+    nextSend.addEventListener('change', validateForm);
+    detailSend.addEventListener('change', validateForm);
+
+    function validateForm() {
+        const selectedTask = task.value;
+        if (!selectedTask) return disableSubmit();
+
+        if (selectedTask === "Make Site Quotation") {
+            const rows = quotationRows.querySelectorAll('tr');
+            if (rows.length === 0) return disableSubmit();
+            for (const row of rows) {
+                const nextVal = row.children[0].querySelector('select').value;
+                const detailVal = row.children[1].querySelector('select').value;
+                const qtyVal = parseFloat(row.children[2].querySelector('input').value);
+                const rateVal = parseFloat(row.children[3].querySelector('input').value);
+                if (!nextVal || !detailVal || isNaN(qtyVal) || qtyVal <= 0 || isNaN(rateVal) || rateVal <= 0) {
+                    return disableSubmit();
+                }
+            }
+        } else if (selectedTask === "Send Money") {
+            if (!nextSend.value || !detailSend.value) return disableSubmit();
+
+            if (!amountSection.classList.contains('hidden')) {
+                const amt = document.getElementById('amount').value;
+                if (!amt || isNaN(amt) || amt <= 0) return disableSubmit();
+            }
+        } else if (selectedTask === "Payment Received") {
+            const receivedFrom = document.getElementById('receivedFrom').value.trim();
+            const receivedAmount = document.getElementById('receivedAmount').value;
+            if (!receivedFrom || !receivedAmount || isNaN(receivedAmount) || receivedAmount <= 0) return disableSubmit();
+        }
+
+        enableSubmit();
+    }
+
+    function disableSubmit() {
+        submitBtn.disabled = true;
+    }
+
+    function enableSubmit() {
+        submitBtn.disabled = false;
+    }
+</script>
+</body>
+</html>
